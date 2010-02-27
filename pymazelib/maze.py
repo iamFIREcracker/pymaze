@@ -104,6 +104,13 @@ class Maze(object):
     if algorithm == DEPTH_FIRST:
       return self.generate_dept_first()
 
+  def __getitem__(self, coord):
+    """Return the cell addressed by the given coordinates.
+
+    """
+    (i, j) = coord
+    return self.grid[i][j]
+
   def __str__(self):
     """Return rows * colums characters separated by a new line. Each character
     is the representation of the state of a cell.
