@@ -57,8 +57,9 @@ class Cell(object):
     given by the walls which have not been knocked down.
 
     """
-    return None
-    return CELL[self.walls]
+    i = int(self.north_wall) * NORTH + int(self.east_wall) * EAST + \
+        int(self.south_wall) * SOUTH + int(self.west_wall) * WEST
+    return CELL[i]
 
 class Maze(object):
   def __init__(self, rows, columns):
