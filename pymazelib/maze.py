@@ -1,18 +1,13 @@
 #!/usr/bin/python
 
-from random import randint
-from random import shuffle
-
 # directions
-(NORTH, EAST, SOUTH, WEST) = (8, 4, 2, 1)
+NORTH = 8
+EAST = 4
+SOUTH = 2
+WEST = 1
 
 # how to represent a cell depending on its walls.
 CELL = '0123456789abcdef'
-
-# generating algorithms
-(DEPTH_FIRST, RANDOMIZED_PRIM) = xrange(2)
-algorithms = {'depth-first': DEPTH_FIRST,
-              'randomized-prim': RANDOMIZED_PRIM,}
 
 def opposite_direction(dir):
   """Return the opposite of the given direction.
@@ -66,18 +61,18 @@ class Cell(object):
     return CELL[self.walls]
 
 class Maze(object):
-  def __init__(self, rows, columns, algorithm):
+  def __init__(self, rows, columns):
     """Create an empty maze of the given dimensions.
 
     """
     self.size = (rows, columns)
     self.grid = [[Cell() for j in xrange(columns)] for i in xrange(rows)]
     self.modified = []
-    self.algorithm = algorithm
 
   def neighbors(self, i, j):
     """Return an array containing the neighbors of the given cell and the
-    direction from the current cell.
+    direction from the current cell. The neighbors are searched clockwise
+    direction, starting from north.
 
     """
     (rows, columns) = self.size
@@ -86,80 +81,23 @@ class Maze(object):
     if (j < columns - 1): neighborhood.append((EAST, (i, j + 1)))
     if (i < rows - 1): neighborhood.append((SOUTH, (i + 1, j)))
     if (j > 0): neighborhood.append((WEST, (i, j - 1)))
-    shuffle(neighborhood)
     return neighborhood
 
-  def generate_depth_first(self):
-    """Generate the maze by using the depth-first algorithm.
-    Basically with start at a random cell and we mark it as a visited. Then we
-    look for neighbors which have not been visited yet, knock down the walls in
-    between and change our current cell with the new one. We repeat these steps
-    untill all the cells of the grid have been visited.  The function yields
-    True if there is something else to do, False otherwise.
+  def walls(self, i, j):
+    """Return an array containing the directions to the walls which have not
+    been knocked down.
 
     """
-    visited = {}
-    (rows, columns) = self.size
-    (i, j) = (randint(0, rows - 1), randint(0, columns - 1))
-    visited[(i, j)] = True
-
-    total = rows * columns
-    cell_stack = [(i, j)]
-    while len(visited) < total:
-      (ci, cj) = cell_stack.pop()
-      neighborhood = self.neighbors(ci, cj)
-      for (dir, (ni, nj)) in neighborhood:
-        if (ni, nj) not in visited:
-          self.grid[ci][cj].knock_down(dir)
-          self.grid[ni][nj].knock_down(opposite_direction(dir))
-          cell_stack.append((ci, cj))
-          cell_stack.append((ni, nj))
-          visited[(ni, nj)] = True
-          self.modified = [(ci, cj), (ni, nj)]
-          yield True
-          break
-    yield False
-
-  def generate_randomized_prim(self):
-    """Generate the maze by using the randomized prim's algorithm.
-    XXX
-
-    """
-    visited = {}
-    (rows, columns) = self.size
-    (i, j) = (randint(0, rows - 1), randint(0, columns - 1))
-    visited[(i, j)] = True
-
-    wall_stack = [(NORTH, (i, j)), (EAST, (i, j)),
-                  (SOUTH, (i, j)), (WEST, (i, j))]
-    while wall_stack:
-      i = randint(0, len(wall_stack) - 1)
-      (dir, (ci, cj)) = wall_stack.pop(i) 
-      (ni, nj) = beyond_wall(ci, cj, dir, rows, columns)
-      if ni is not None and nj is not None and (ni, nj) not in visited:
-        self.grid[ci][cj].knock_down(dir)
-        self.grid[ni][nj].knock_down(opposite_direction(dir))
-        if self.grid[ni][nj].north_wall:
-          wall_stack.append((NORTH, (ni, nj)))
-        if self.grid[ni][nj].east_wall:
-          wall_stack.append((EAST, (ni, nj)))
-        if self.grid[ni][nj].south_wall:
-          wall_stack.append((SOUTH, (ni, nj)))
-        if self.grid[ni][nj].west_wall:
-          wall_stack.append((WEST, (ni, nj)))
-        visited[(ni, nj)] = True
-        self.modified = [(ci, cj), (ni, nj)]
-        yield True
-    yield False
-
-  def generate(self):
-    """Return a generator object to be used for the maze generation.
-
-    """
-    if self.algorithm == DEPTH_FIRST:
-      return self.generate_depth_first()
-    elif self.algorithm == RANDOMIZED_PRIM:
-      return self.generate_randomized_prim()
+    wall_list = []
+    if self.grid[i][j].north_wall:
+      wall_list.append(NORTH)
+    if self.grid[i][j].east_wall:
+      wall_list.append(EAST)
+    if self.grid[i][j].south_wall:
+      wall_list.append(SOUTH)
+    if self.grid[i][j].west_wall:
+      wall_list.append(WEST)
+    return wall_list
 
   def __getitem__(self, coord):
     """Return the cell addressed by the given coordinates.

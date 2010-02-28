@@ -9,11 +9,7 @@ from gtk import gdk
 import cairo
 
 from pymazelib.maze import Maze
-from pymazelib.maze import algorithms
-from pymazelib.maze import NORTH
-from pymazelib.maze import EAST
-from pymazelib.maze import SOUTH
-from pymazelib.maze import WEST
+from pymazelib.generators import generators
 
 # enumerate used for the buttons 'clicked' callbacks
 (CLEAR, START) = xrange(2)
@@ -43,7 +39,8 @@ class Window(gtk.Window):
     vbox.pack_end(hbox, False, False)
     self.add(vbox)
 
-    self.maze = Maze(rows, columns, algorithm)
+    self.maze_algorithm = algorithm
+    self.maze = Maze(rows, columns)
 
   def configure_cb(self, widget, event):
     """Each time the drawing area is reconfigured, we store a grid used to map
@@ -53,7 +50,7 @@ class Window(gtk.Window):
     """
     (_, _, width, height) = widget.get_allocation()
     self.darea_size = (width, height)
-    # create a grid of pixels
+
     (rows, columns) = self.maze.size
     delta = min(width, height) // max(rows, columns)
     startx = (width - delta * columns) // 2
@@ -66,14 +63,14 @@ class Window(gtk.Window):
       grid.append(row)
     self.delta = delta
     self.grid = grid
-    # create the cairo surface ..
+
     self.surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
     self.cr = cairo.Context(self.surface)
-    # .. and blank it
+
     self.cr.set_source_rgb(1, 1, 1)
     self.cr.rectangle(0, 0, width, height)
     self.cr.fill()
-    # draw the maze
+
     self.draw_maze(self.cr)
 
     return True
@@ -97,11 +94,10 @@ class Window(gtk.Window):
     """
     if kind == CLEAR:
       (rows, columns) = self.maze.size
-      algorithm = self.maze.algorithm
-      self.maze = Maze(rows, columns, algorithm)
+      self.maze = Maze(rows, columns)
       self.draw_maze(self.cr)
     elif kind == START:
-      gen_fun = self.generate(self.maze.generate())
+      gen_fun = self.generate(generators[self.maze_algorithm](self.maze))
       gobject.idle_add(gen_fun.next)
 
   def generate(self, maze_gen):
@@ -175,7 +171,7 @@ def main(argv):
     print "Usage: %s <rows> <columns> <algorithm>" % argv[0]
     return 1
   (rows, columns) = map(int, argv[1:3])
-  Window(rows, columns, algorithms[argv[3]]).mainloop()
+  Window(rows, columns, argv[3]).mainloop()
 
 if __name__ == '__main__':
   sys.exit(main(sys.argv))
