@@ -12,7 +12,7 @@ from pymazelib.maze import Maze
 from pymazelib.generators import generators
 
 # enumerate used for the buttons 'clicked' callbacks
-(CLEAR, START) = xrange(2)
+(COPY, START) = xrange(2)
 
 class Window(gtk.Window):
   def __init__(self, rows, columns, algorithm):
@@ -30,8 +30,8 @@ class Window(gtk.Window):
     darea.connect('expose-event', self.expose_cb)
     vbox.pack_start(darea)
     hbox = gtk.HBox()
-    clear = gtk.Button('Clear')
-    clear.connect('clicked', self.clicked_cb, CLEAR)
+    clear = gtk.Button('Copy')
+    clear.connect('clicked', self.clicked_cb, COPY)
     hbox.pack_start(clear, False, False)
     start = gtk.Button('Start')
     start.connect('clicked', self.clicked_cb, START)
@@ -39,6 +39,8 @@ class Window(gtk.Window):
     vbox.pack_end(hbox, False, False)
     self.add(vbox)
 
+    self.maze_rows = rows
+    self.maze_columns = columns
     self.maze_algorithm = algorithm
     self.maze = Maze(rows, columns)
 
@@ -92,11 +94,11 @@ class Window(gtk.Window):
     current maze or start the generating process.
 
     """
-    if kind == CLEAR:
-      (rows, columns) = self.maze.size
-      self.maze = Maze(rows, columns)
-      self.draw_maze(self.cr)
+    if kind == COPY:
+      gtk.Clipboard().set_text(str(self.maze))
     elif kind == START:
+      self.maze = Maze(self.maze_rows, self.maze_columns)
+      self.draw_maze(self.cr)
       gen_fun = self.generate(generators[self.maze_algorithm](self.maze))
       gobject.idle_add(gen_fun.next)
 
