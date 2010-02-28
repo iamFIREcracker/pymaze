@@ -112,7 +112,7 @@ class Maze(object):
     is the representation of the state of a cell.
 
     """
-    repr = ''
+    repr = '%d %d\n' % self.size
     for (i, row) in enumerate(self.grid):
       if i != 0:
         repr += '\n'
