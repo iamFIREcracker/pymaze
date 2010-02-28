@@ -11,6 +11,7 @@ CELL = '0123456789abcdef'
 
 # generating algorithms
 (DEPTH_FIRST) = xrange(1)
+algorithms = {'depth-first': DEPTH_FIRST}
 
 def opposite_direction(dir):
   """Return the opposite of the given direction.
@@ -26,29 +27,41 @@ class Cell(object):
     """Create a new cell with all its walls.
 
     """
-    self.visited = False
-    self.walls = NORTH + EAST + SOUTH + WEST
+    self.north_wall = True
+    self.east_wall = True
+    self.south_wall = True
+    self.west_wall = True
 
-  def knock_down(self, wall):
-    """Knock down the given wall.
+  def knock_down(self, direction):
+    """Knock down the wall facing at the given direction.
 
     """
-    self.walls -= wall
+    if direction == NORTH:
+      self.north_wall = False
+    elif direction == EAST:
+      self.east_wall = False
+    elif direction == SOUTH:
+      self.south_wall = False
+    elif direction == WEST:
+      self.west_wall = False
 
   def __str__(self):
     """Return a character representing the state of the cell. The state is
     given by the walls which have not been knocked down.
 
     """
+    return None
     return CELL[self.walls]
 
 class Maze(object):
-  def __init__(self, rows, columns):
+  def __init__(self, rows, columns, algorithm):
     """Create an empty maze of the given dimensions.
 
     """
     self.size = (rows, columns)
     self.grid = [[Cell() for j in xrange(columns)] for i in xrange(rows)]
+    self.modified = []
+    self.algorithm = algorithm
 
   def neighbors(self, i, j):
     """Return an array containing the neighbors of the given cell and the
@@ -64,7 +77,7 @@ class Maze(object):
     shuffle(neighborhood)
     return neighborhood
 
-  def generate_dept_first(self):
+  def generate_depth_first(self):
     """Generate the maze by using the depth-first algorithm.
     Basically with start at a random cell and we mark it as a visited. Then we
     look for neighbors which have not been visited yet, knock down the walls in
@@ -73,36 +86,35 @@ class Maze(object):
     True if there is something else to do, False otherwise.
 
     """
+    visited = {}
     (rows, columns) = self.size
     (i, j) = (randint(0, rows - 1), randint(0, columns - 1))
-    self.grid[i][j].visited = True
+    visited[(i, j)] = True
 
     total = rows * columns
-    visited = 1
     cell_stack = [(i, j)]
-    while visited < total:
+    while len(visited) < total:
       (ci, cj) = cell_stack.pop()
       neighborhood = self.neighbors(ci, cj)
       for (dir, (ni, nj)) in neighborhood:
-        if not self.grid[ni][nj].visited:
+        if (ni, nj) not in visited:
           self.grid[ci][cj].knock_down(dir)
           self.grid[ni][nj].knock_down(opposite_direction(dir))
-          self.grid[ni][nj].visited = True
-          visited += 1
           cell_stack.append((ci, cj))
           cell_stack.append((ni, nj))
+          visited[(ni, nj)] = True
+          self.modified = [(ci, cj), (ni, nj)]
           break
       yield True
     yield False
 
 
-  def generate(self, algorithm):
-    """Return a generator object which will use the given algorithm in order to
-    create the perfect maze.
+  def generate(self):
+    """Return a generator object to be used for the maze generation.
 
     """
-    if algorithm == DEPTH_FIRST:
-      return self.generate_dept_first()
+    if self.algorithm == DEPTH_FIRST:
+      return self.generate_depth_first()
 
   def __getitem__(self, coord):
     """Return the cell addressed by the given coordinates.
