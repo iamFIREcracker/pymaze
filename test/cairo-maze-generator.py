@@ -2,6 +2,7 @@
 
 from __future__ import division
 import sys
+import os
 
 import gobject
 import gtk
@@ -11,38 +12,70 @@ import cairo
 from pymazelib.maze import Maze
 from pymazelib.generators import generators
 
-# enumerate used for the buttons 'clicked' callbacks
-(COPY, START) = xrange(2)
+GUI_CONF = os.path.join(os.path.dirname(__file__), 'cairo-maze-generator.xml')
 
-class Window(gtk.Window):
-  def __init__(self, rows, columns, algorithm):
-    """The gui consists of a drawing area used to show the progress of the maze
-    generation, and a couple of buttons used to clear the current maze, and to
-    start the generating process.
+def create_grid_and_delta(width, height, rows, columns):
+  """XXX
+
+  """
+  delta = min(width, height) // max(rows, columns)
+  startx = (width - delta * columns) // 2
+  starty = (height - delta * rows) // 2
+  grid = []
+  for y in xrange(starty, starty + delta * rows + 1, delta):
+    row = []
+    for x in xrange(startx, startx + delta * columns + 1, delta):
+      row.append((x, y))
+    grid.append(row)
+  return (grid, delta)
+
+class Gui(object):
+  def __init__(self):
+    """The gui consists of a serie of controls to choose the number of rows,
+    the number of columns, and the generating algorithm, a drawing area used to
+    show the progress of the maze generation, and a couple of buttons used to
+    clear the current maze, and to start the generating process.
 
     """
-    super(Window, self).__init__()
-    self.connect('destroy', gtk.main_quit)
-    self.resize(200, 200)
-    vbox = gtk.VBox()
-    darea = gtk.DrawingArea()
-    darea.connect('configure-event', self.configure_cb)
-    darea.connect('expose-event', self.expose_cb)
-    vbox.pack_start(darea)
-    hbox = gtk.HBox()
-    clear = gtk.Button('Copy')
-    clear.connect('clicked', self.clicked_cb, COPY)
-    hbox.pack_start(clear, False, False)
-    start = gtk.Button('Start')
-    start.connect('clicked', self.clicked_cb, START)
-    hbox.pack_end(start, False, False)
-    vbox.pack_end(hbox, False, False)
-    self.add(vbox)
+    builder = gtk.Builder()
+    builder.add_from_file(GUI_CONF)
+    builder.connect_signals(self)
 
-    self.maze_rows = rows
-    self.maze_columns = columns
-    self.maze_algorithm = algorithm
-    self.maze = Maze(rows, columns)
+    self.window = builder.get_object('window')
+    self._rows = builder.get_object('rows')
+    self._columns = builder.get_object('columns')
+    self._algorithms = builder.get_object('algorithms')
+    self._copy = builder.get_object('copy')
+    self._generate = builder.get_object('generate')
+    self.widgets = [self._rows, self._columns, self._algorithms,
+                    self._copy, self._generate]
+
+    model = gtk.ListStore(str)
+    for text in generators.keys():
+        model.append([text])
+    self._algorithms.set_model(model)
+    cell = gtk.CellRendererText()
+    self._algorithms.pack_start(cell, True)
+    self._algorithms.add_attribute(cell, 'text', 0)
+    self._algorithms.set_active(0)
+
+    self.maze = Maze(self.rows, self.columns)
+
+  def delete_cb(self, widget, event):
+    """Quit the gtk main loop.
+
+    """
+    gtk.main_quit()
+
+  def value_changed_cb(self, widget):
+    """Create a new maze, update the grid and then redraw the scene.
+
+    """
+    (width, height) = self.darea_size
+    self.maze = Maze(self.rows, self.columns)
+    (self.grid, self.delta) = \
+        create_grid_and_delta(width, height, self.rows, self.columns)
+    self.draw_maze(self.cr)
 
   def configure_cb(self, widget, event):
     """Each time the drawing area is reconfigured, we store a grid used to map
@@ -53,26 +86,11 @@ class Window(gtk.Window):
     (_, _, width, height) = widget.get_allocation()
     self.darea_size = (width, height)
 
-    (rows, columns) = self.maze.size
-    delta = min(width, height) // max(rows, columns)
-    startx = (width - delta * columns) // 2
-    starty = (height - delta * rows) // 2
-    grid = []
-    for y in xrange(starty, starty + delta * rows + 1, delta):
-      row = []
-      for x in xrange(startx, startx + delta * columns + 1, delta):
-        row.append((x, y))
-      grid.append(row)
-    self.delta = delta
-    self.grid = grid
-
     self.surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
     self.cr = cairo.Context(self.surface)
 
-    self.cr.set_source_rgb(1, 1, 1)
-    self.cr.rectangle(0, 0, width, height)
-    self.cr.fill()
-
+    (self.grid, self.delta) = \
+        create_grid_and_delta(width, height, self.rows, self.columns)
     self.draw_maze(self.cr)
 
     return True
@@ -89,27 +107,37 @@ class Window(gtk.Window):
     cr.paint()
     return False
 
-  def clicked_cb(self, button, kind):
-    """Depending on the flag passed to the callback, we are going to clear the
-    current maze or start the generating process.
+  def copy_clicked_cb(self, button):
+    """Copy the maze representation to the clipboard.
 
     """
-    if kind == COPY:
-      gtk.Clipboard().set_text(str(self.maze))
-    elif kind == START:
-      self.maze = Maze(self.maze_rows, self.maze_columns)
-      self.draw_maze(self.cr)
-      gen_fun = self.generate(generators[self.maze_algorithm](self.maze))
-      gobject.idle_add(gen_fun.next)
+    gtk.Clipboard().set_text(str(self.maze))
+
+  def generate_clicked_cb(self, button):
+    """Start the maze generator process.
+
+    """
+    self.maze = Maze(self.rows, self.columns)
+    self.draw_maze(self.cr)
+    gen_fun = self.generate(generators[self.algorithm](self.maze))
+    gobject.idle_add(gen_fun.next)
 
   def generate(self, maze_gen):
     """Wrapper of the maze generator function.
     Each time the maze steps forward, we redraw the involved cells.
+    All the widgets are disabled durint the process.
 
     """
+    for item in self.widgets:
+      item.set_sensitive(False)
+
     while maze_gen.next():
       self.draw_modified(self.cr)
       yield True
+
+    for item in self.widgets:
+      item.set_sensitive(True)
+
     yield False
 
   def draw_line(self, cr, x1, y1, x2, y2):
@@ -146,11 +174,16 @@ class Window(gtk.Window):
     """Wrapper which invoke the draw_cell on each cell of the maze.
 
     """
+    (width, height) = self.darea_size
+    self.cr.set_source_rgb(1, 1, 1)
+    self.cr.rectangle(0, 0, width, height)
+    self.cr.fill()
+
     (rows, columns) = self.maze.size
     for i in xrange(rows):
       for j in xrange(columns):
         self.draw_cell(cr, i, j)
-    self.queue_draw()
+    self.window.queue_draw()
 
   def draw_modified(self, cr):
     """Wrapper which invoke the draw_cell on each modified cell.
@@ -159,21 +192,38 @@ class Window(gtk.Window):
     while self.maze.modified:
       (i, j) = self.maze.modified.pop()
       self.draw_cell(cr, i, j)
-    self.queue_draw()
+    self.window.queue_draw()
 
   def mainloop(self):
     """Wrapper to gtk mainloop.
 
     """
-    self.show_all()
     gtk.main()
 
+  @property
+  def rows(self):
+    """Return the value of the spinbutton controlling the number of rows.
+
+    """
+    return self._rows.get_value_as_int()
+
+  @property
+  def columns(self):
+    """Return the value of the spinbutton controlling the number of columns.
+
+    """
+    return self._columns.get_value_as_int()
+
+  @property
+  def algorithm(self):
+    """Return the active text of the combobox controlling the generator
+    algorithm.
+
+    """
+    return self._algorithms.get_active_text()
+
 def main(argv):
-  if len(argv) != 4:
-    print "Usage: %s <rows> <columns> <algorithm>" % argv[0]
-    return 1
-  (rows, columns) = map(int, argv[1:3])
-  Window(rows, columns, argv[3]).mainloop()
+  Gui().mainloop()
 
 if __name__ == '__main__':
   sys.exit(main(sys.argv))
