@@ -13,16 +13,14 @@ from maze import beyond_wall
      randomized-prism
 
 """
-generators = {'depth-first': lambda m: generate_depth_first(m),
-              'randomized-prim': lambda m: generate_randomized_prim(m)}
+generators = {'recursive-backtracker': lambda m: recursive_backtracker(m),
+              'randomized-prim': lambda m: randomized_prim(m)}
 
-def generate_depth_first(maze):
-  """Generate the maze by using the depth-first algorithm.
-  Basically with start at a random cell and we mark it as a visited. Then we
-  look for neighbors which have not been visited yet, knock down the walls in
-  between and change our current cell with the new one. We repeat these steps
-  untill all the cells of the grid have been visited.  The function yields
-  True if there is something else to do, False otherwise.
+def recursive_backtracker(maze):
+  """Pick up a a random cell and mark it as a visited. Then look for neighbors
+  which have not been visited yet, knock down the walls in between and set the
+  new cell as the current one. Repeat these steps untill all the cells of the
+  grid have been visited.
 
   """
   visited = {}
@@ -48,9 +46,12 @@ def generate_depth_first(maze):
         break
   yield False
 
-def generate_randomized_prim(maze):
-  """Generate the maze by using the randomized prim's algorithm.
-  XXX
+def randomized_prim(maze):
+  """Pick up a random cell, mark it as visited, and add its walls inside a
+  list of walls. Extract a random wall from the list: if the cell on the
+  opposite has not been yet visited, knock down the wall, mark the the new cell
+  as visited, and add its walls to the wall list. Repeat the process untill all
+  the cells have been visited.
 
   """
   visited = {}
@@ -58,7 +59,7 @@ def generate_randomized_prim(maze):
   (i, j) = (randint(0, rows - 1), randint(0, columns - 1))
   visited[(i, j)] = True
 
-  wall_stack = map(lambda d: (d, (i, j)), maze.walls(i, j))
+  wall_stack = map(lambda d: (d, (i, j)), maze[(i, j)].walls)
   while wall_stack:
     i = randint(0, len(wall_stack) - 1)
     (dir, (ci, cj)) = wall_stack.pop(i) 
@@ -66,7 +67,7 @@ def generate_randomized_prim(maze):
     if ni is not None and nj is not None and (ni, nj) not in visited:
       maze[(ci, cj)].knock_down(dir)
       maze[(ni, nj)].knock_down(opposite_direction(dir))
-      for dir in maze.walls(ni, nj):
+      for dir in maze[(ni, nj)].walls:
         wall_stack.append((dir, (ni, nj)))
       visited[(ni, nj)] = True
       maze.modified = [(ci, cj), (ni, nj)]
