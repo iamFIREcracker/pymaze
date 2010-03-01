@@ -52,6 +52,39 @@ class Cell(object):
     elif direction == WEST:
       self.west_wall = False
 
+  @property
+  def directions(self):
+    """Return an array containing the open directions of the current cell.
+
+    """
+    direction_list = []
+    if self.north_wall:
+      direction_list.append(NORTH)
+    if self.east_wall:
+      direction_list.append(EAST)
+    if self.south_wall:
+      direction_list.append(SOUTH)
+    if self.west_wall:
+      direction_list.append(WEST)
+    return direction_list
+
+  @property
+  def walls(self):
+    """Return an array containing the directions to the walls which have not
+    been knocked down.
+
+    """
+    wall_list = []
+    if self.north_wall:
+      wall_list.append(NORTH)
+    if self.east_wall:
+      wall_list.append(EAST)
+    if self.south_wall:
+      wall_list.append(SOUTH)
+    if self.west_wall:
+      wall_list.append(WEST)
+    return wall_list
+
   def __str__(self):
     """Return a character representing the state of the cell. The state is
     given by the walls which have not been knocked down.
@@ -83,22 +116,6 @@ class Maze(object):
     if (i < rows - 1): neighborhood.append((SOUTH, (i + 1, j)))
     if (j > 0): neighborhood.append((WEST, (i, j - 1)))
     return neighborhood
-
-  def walls(self, i, j):
-    """Return an array containing the directions to the walls which have not
-    been knocked down.
-
-    """
-    wall_list = []
-    if self.grid[i][j].north_wall:
-      wall_list.append(NORTH)
-    if self.grid[i][j].east_wall:
-      wall_list.append(EAST)
-    if self.grid[i][j].south_wall:
-      wall_list.append(SOUTH)
-    if self.grid[i][j].west_wall:
-      wall_list.append(WEST)
-    return wall_list
 
   def __getitem__(self, coord):
     """Return the cell addressed by the given coordinates.
