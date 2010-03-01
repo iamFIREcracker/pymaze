@@ -1,10 +1,7 @@
 #!/usr/bin/python
 
 # directions
-NORTH = 8
-EAST = 4
-SOUTH = 2
-WEST = 1
+NORTH, EAST, SOUTH, WEST = range(4) 
 
 # how to represent a cell depending on its walls.
 CELL = '0123456789abcdef'
@@ -13,10 +10,7 @@ def opposite_direction(dir):
   """Return the opposite of the given direction.
 
   """
-  if dir == NORTH: return SOUTH
-  elif dir == EAST: return WEST
-  elif dir == SOUTH: return NORTH
-  elif dir == WEST: return EAST
+  return (dir + 2) % 4
 
 def beyond_wall(i, j, dir, rows, columns):
   """Return the indices of the cell beyond the wall located at the given
@@ -34,6 +28,8 @@ class Cell(object):
     """Create a new cell with all its walls.
 
     """
+    self.start = False
+    self.end = False
     self.north_wall = True
     self.east_wall = True
     self.south_wall = True
@@ -90,8 +86,8 @@ class Cell(object):
     given by the walls which have not been knocked down.
 
     """
-    i = int(self.north_wall) * NORTH + int(self.east_wall) * EAST + \
-        int(self.south_wall) * SOUTH + int(self.west_wall) * WEST
+    i = int(self.north_wall) * 8 + int(self.east_wall) * 4 + \
+        int(self.south_wall) * 2 + int(self.west_wall) * 1
     return CELL[i]
 
 class Maze(object):
@@ -101,6 +97,8 @@ class Maze(object):
     """
     self.size = (rows, columns)
     self.grid = [[Cell() for j in xrange(columns)] for i in xrange(rows)]
+    self.grid[0][0].start = True
+    self.grid[rows - 1][columns - 1].end = True
     self.modified = []
 
   def neighbors(self, i, j):
