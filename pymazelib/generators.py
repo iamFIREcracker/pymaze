@@ -8,13 +8,12 @@ from maze import opposite_direction
 from maze import beyond_wall
 
 """Dictionary used to map an algorithm to its generator function.
-   List of accepted keys:
-     depth-first
-     randomized-prism
 
 """
-generators = {'recursive-backtracker': lambda m: recursive_backtracker(m),
-              'randomized-prim': lambda m: randomized_prim(m)}
+generators = {
+              'Prim': lambda m: prim(m),
+              'Recursive Backtracker': lambda m: recursive_backtracker(m),
+             }
 
 def recursive_backtracker(maze):
   """Pick up a a random cell and mark it as a visited. Then look for neighbors
@@ -46,7 +45,7 @@ def recursive_backtracker(maze):
         break
   yield False
 
-def randomized_prim(maze):
+def prim(maze):
   """Pick up a random cell, mark it as visited, and add its walls inside a
   list of walls. Extract a random wall from the list: if the cell on the
   opposite has not been yet visited, knock down the wall, mark the the new cell
