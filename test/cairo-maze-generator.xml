@@ -63,18 +63,35 @@
             <child>
               <object class="GtkLabel" id="label3">
                 <property name="visible">True</property>
-                <property name="label" translatable="yes">Algorithms</property>
+                <property name="label" translatable="yes">Generators</property>
               </object>
               <packing>
                 <property name="position">4</property>
               </packing>
             </child>
             <child>
-              <object class="GtkComboBox" id="algorithms">
+              <object class="GtkComboBox" id="generators">
                 <property name="visible">True</property>
               </object>
               <packing>
                 <property name="position">5</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="label4">
+                <property name="visible">True</property>
+                <property name="label" translatable="yes">Solvers</property>
+              </object>
+              <packing>
+                <property name="position">6</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkComboBox" id="solvers">
+                <property name="visible">True</property>
+              </object>
+              <packing>
+                <property name="position">7</property>
               </packing>
             </child>
           </object>
@@ -98,20 +115,6 @@
           <object class="GtkHBox" id="hbox2">
             <property name="visible">True</property>
             <child>
-              <object class="GtkButton" id="copy">
-                <property name="label" translatable="yes">Copy</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">True</property>
-                <signal name="clicked" handler="copy_clicked_cb"/>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">False</property>
-                <property name="position">0</property>
-              </packing>
-            </child>
-            <child>
               <object class="GtkButton" id="generate">
                 <property name="label" translatable="yes">Generate</property>
                 <property name="visible">True</property>
@@ -120,10 +123,19 @@
                 <signal name="clicked" handler="generate_clicked_cb"/>
               </object>
               <packing>
-                <property name="expand">False</property>
-                <property name="fill">False</property>
-                <property name="pack_type">end</property>
-                <property name="position">2</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="solve">
+                <property name="label" translatable="yes">Solve</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <signal name="clicked" handler="solve_clicked_cb"/>
+              </object>
+              <packing>
+                <property name="position">1</property>
               </packing>
             </child>
             <child>
@@ -136,10 +148,7 @@
                 <property name="draw_indicator">True</property>
               </object>
               <packing>
-                <property name="expand">False</property>
-                <property name="fill">False</property>
-                <property name="pack_type">end</property>
-                <property name="position">1</property>
+                <property name="position">2</property>
               </packing>
             </child>
           </object>

@@ -11,8 +11,19 @@ import cairo
 
 from pymazelib.maze import Maze
 from pymazelib.generators import generators
+from pymazelib.solvers import solvers
 
 GUI_CONF = os.path.join(os.path.dirname(__file__), 'cairo-maze-generator.xml')
+
+def combobox_init(combobox, items):
+  model = gtk.ListStore(str)
+  for i in items:
+      model.append([i])
+  combobox.set_model(model)
+  cell = gtk.CellRendererText()
+  combobox.pack_start(cell, True)
+  combobox.add_attribute(cell, 'text', 0)
+  combobox.set_active(0)
 
 def create_grid_and_delta(width, height, rows, columns):
   """XXX
@@ -44,21 +55,16 @@ class Gui(object):
     self.window = builder.get_object('window')
     self._rows = builder.get_object('rows')
     self._columns = builder.get_object('columns')
-    self._algorithms = builder.get_object('algorithms')
-    self._copy = builder.get_object('copy')
+    self._generators = builder.get_object('generators')
+    self._solvers = builder.get_object('solvers')
     self._generate = builder.get_object('generate')
+    self._solve = builder.get_object('solve')
     self._show_evoltuion = builder.get_object('show_evolution')
-    self.widgets = [self._rows, self._columns, self._algorithms,
-                    self._copy, self._generate]
+    self.widgets = [self._rows, self._columns, self._generators,
+                    self._solvers, self._generate]
 
-    model = gtk.ListStore(str)
-    for text in generators.keys():
-        model.append([text])
-    self._algorithms.set_model(model)
-    cell = gtk.CellRendererText()
-    self._algorithms.pack_start(cell, True)
-    self._algorithms.add_attribute(cell, 'text', 0)
-    self._algorithms.set_active(0)
+    combobox_init(self._generators, generators.keys())
+    combobox_init(self._solvers, solvers.keys())
 
     self.maze = Maze(self.rows, self.columns)
 
@@ -108,24 +114,25 @@ class Gui(object):
     cr.paint()
     return False
 
-  def copy_clicked_cb(self, button):
-    """Copy the maze representation to the clipboard.
-
-    """
-    gtk.Clipboard().set_text(str(self.maze))
-
   def generate_clicked_cb(self, button):
     """Start the maze generator process.
 
     """
     self.maze = Maze(self.rows, self.columns)
     self.draw_maze(self.cr)
-    gen_fun = self.generate(generators[self.algorithm](self.maze))
-    gobject.idle_add(gen_fun.next)
+    process_fun = self.process(generators[self.generator](self.maze))
+    gobject.idle_add(process_fun.next)
 
-  def generate(self, maze_gen):
-    """Wrapper of the maze generator function.
-    Each time the maze steps forward, we redraw the involved cells.
+  def solve_clicked_cb(self, button):
+    """Start the maze solver process.
+
+    """
+    process_fun = self.process(solvers[self.solver](self.maze))
+    gobject.idle_add(process_fun.next)
+
+  def process(self, maze_gen):
+    """Wrapper of the maze generator/solver functions.
+    Each time a new step is done, we redraw the involved cells.
     All the widgets are disabled durint the process.
 
     """
@@ -153,17 +160,19 @@ class Gui(object):
     cr.stroke()
 
   def draw_cell(self, cr, i, j):
-    """Blank the background of the cell, and then draw the walls depending on
-    their state.
+    """Draw a cell of the maze depending on the kind of cell (start point, end
+    point..) and its walls.
 
     """
+    cell = self.maze[(i, j)]
     delta = self.delta
     (x, y) = self.grid[i][j]
-    cr.set_source_rgb(1, 1, 1)
+    if cell.start: cr.set_source_rgb(1, 0, 0)
+    elif cell.end: cr.set_source_rgb(0, 1, 0)
+    else: cr.set_source_rgb(1, 1, 1)
     cr.rectangle(x, y, delta, delta)
     cr.fill()
 
-    cell = self.maze[(i, j)]
     cr.set_source_rgb(0, 0, 0)
     if cell.north_wall:
       self.draw_line(cr, x, y, x + delta, y)
@@ -219,12 +228,20 @@ class Gui(object):
     return self._columns.get_value_as_int()
 
   @property
-  def algorithm(self):
+  def generator(self):
     """Return the active text of the combobox controlling the generator
     algorithm.
 
     """
-    return self._algorithms.get_active_text()
+    return self._generators.get_active_text()
+
+  @property
+  def solver(self):
+    """Return the active text of the combobox controlling the solver
+    algorithm.
+
+    """
+    return self._solvers.get_active_text()
 
 def main(argv):
   Gui().mainloop()
