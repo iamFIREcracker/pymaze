@@ -49,7 +49,7 @@ class Gui(object):
     self._generate = builder.get_object('generate')
     self._show_evoltuion = builder.get_object('show_evolution')
     self.widgets = [self._rows, self._columns, self._algorithms,
-                    self._copy, self._generate, self._show_evoltuion]
+                    self._copy, self._generate]
 
     model = gtk.ListStore(str)
     for text in generators.keys():
@@ -132,12 +132,11 @@ class Gui(object):
     for item in self.widgets:
       item.set_sensitive(False)
 
-    show = self._show_evoltuion.get_active()
     while maze_gen.next():
-      if show:
+      if self._show_evoltuion.get_active():
         self.draw_modified(self.cr)
       yield True
-    if not show:
+    if not self._show_evoltuion.get_active():
       self.draw_maze(self.cr)
 
     for item in self.widgets:
