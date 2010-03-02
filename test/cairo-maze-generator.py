@@ -65,12 +65,11 @@ class Gui(object):
     self._columns = builder.get_object('columns')
     self._generators = builder.get_object('generators')
     self._solvers = builder.get_object('solvers')
-    self._clear = builder.get_object('clear')
     self._generate = builder.get_object('generate')
     self._solve = builder.get_object('solve')
     self._show_evoltuion = builder.get_object('show_evolution')
     self.widgets = [self._rows, self._columns, self._generators,
-                    self._solvers, self._clear, self._generate, self._solve]
+                    self._solvers, self._generate, self._solve]
 
     combobox_init(self._generators, generators.keys())
     combobox_init(self._solvers, solvers.keys())
@@ -124,17 +123,12 @@ class Gui(object):
     cr.paint()
     return False
 
-  def clear_clicked_cb(self, button):
-    """Clear the current maze.
-
-    """
-    self.maze = Maze(self.rows, self.columns)
-    self.draw_maze(self.cr)
-
   def generate_clicked_cb(self, button):
     """Start the maze generator process.
 
     """
+    self.maze = Maze(self.rows, self.columns)
+    self.draw_maze(self.cr)
     process_fun = self.process(generators[self.generator](self.maze))
     gobject.idle_add(process_fun.next)
 
@@ -142,6 +136,8 @@ class Gui(object):
     """Start the maze solver process.
 
     """
+    self.maze.reset()
+    self.draw_maze(self.cr)
     process_fun = self.process(solvers[self.solver](self.maze))
     gobject.idle_add(process_fun.next)
 
