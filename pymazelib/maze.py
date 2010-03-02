@@ -12,74 +12,40 @@ def opposite_direction(dir):
   """
   return (dir + 2) % 4
 
-def beyond_wall(i, j, dir, rows, columns):
-  """Return the indices of the cell beyond the wall located at the given
-  direction.
-
-  """
-  if dir == NORTH and i > 0: return (i - 1, j)
-  elif dir == EAST and j < columns - 1: return (i, j + 1)
-  elif dir == SOUTH and i < rows - 1: return (i + 1, j)
-  elif dir == WEST and j > 0: return (i, j - 1)
-  else: return (None, None)
-
 class Cell(object):
-  def __init__(self):
-    """Create a new cell with all its walls.
+  def __init__(self, coords):
+    """Create a new cell with all its walls. The given coordinates represent
+    the position of the cell inside the maze.
 
     """
+    self.coords = coords
+    self.walls = [True, True, True, True]
+    self.directions = [False, False, False, False]
+    self.neighbors = [None, None, None, None]
     self.start = False
     self.end = False
-    self.north_wall = True
-    self.east_wall = True
-    self.south_wall = True
-    self.west_wall = True
+    self.carved = False
+    self.active = False
+    self.backward = False
 
-  def knock_down(self, direction):
+  def knock_down(self, dir):
     """Knock down the wall facing at the given direction.
 
     """
-    if direction == NORTH:
-      self.north_wall = False
-    elif direction == EAST:
-      self.east_wall = False
-    elif direction == SOUTH:
-      self.south_wall = False
-    elif direction == WEST:
-      self.west_wall = False
+    self.walls[dir] = False
+    self.directions[dir] = True
 
-  @property
-  def directions(self):
-    """Return an array containing the open directions of the current cell.
+  def intact_walls(self):
+    """Return a list of not knocked down walls.
 
     """
-    direction_list = []
-    if self.north_wall:
-      direction_list.append(NORTH)
-    if self.east_wall:
-      direction_list.append(EAST)
-    if self.south_wall:
-      direction_list.append(SOUTH)
-    if self.west_wall:
-      direction_list.append(WEST)
-    return direction_list
+    return [dir for dir in xrange(4) if self.walls[dir]]
 
-  @property
-  def walls(self):
-    """Return an array containing the directions to the walls which have not
-    been knocked down.
+  def open_directions(self):
+    """Return the open directions of the current cell.
 
     """
-    wall_list = []
-    if self.north_wall:
-      wall_list.append(NORTH)
-    if self.east_wall:
-      wall_list.append(EAST)
-    if self.south_wall:
-      wall_list.append(SOUTH)
-    if self.west_wall:
-      wall_list.append(WEST)
-    return wall_list
+    return [dir for dir in xrange(4) if self.directions[dir]]
 
   def __str__(self):
     """Return a character representing the state of the cell. The state is
@@ -96,7 +62,10 @@ class Maze(object):
 
     """
     self.size = (rows, columns)
-    self.grid = [[Cell() for j in xrange(columns)] for i in xrange(rows)]
+    self.grid = [[Cell((i, j)) for j in xrange(columns)] for i in xrange(rows)]
+    for i in xrange(rows):
+      for j in xrange(columns):
+        self.grid[i][j].neighbors = self.neighbors(i, j)
     self.grid[0][0].start = True
     self.grid[rows - 1][columns - 1].end = True
     self.modified = []
@@ -108,11 +77,11 @@ class Maze(object):
 
     """
     (rows, columns) = self.size
-    neighborhood = []
-    if (i > 0): neighborhood.append((NORTH, (i - 1, j)))
-    if (j < columns - 1): neighborhood.append((EAST, (i, j + 1)))
-    if (i < rows - 1): neighborhood.append((SOUTH, (i + 1, j)))
-    if (j > 0): neighborhood.append((WEST, (i, j - 1)))
+    neighborhood = [None, None, None, None]
+    if (i > 0): neighborhood[NORTH] = self.grid[i - 1][j]
+    if (j < columns - 1): neighborhood[EAST] = self.grid[i][j + 1]
+    if (i < rows - 1): neighborhood[SOUTH] = self.grid[i + 1][j]
+    if (j > 0): neighborhood[WEST] = self.grid[i][j - 1]
     return neighborhood
 
   def __getitem__(self, coord):
