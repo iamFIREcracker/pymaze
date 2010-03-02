@@ -23,10 +23,10 @@ def prim(maze):
 
   """
   (rows, columns) = maze.size
-  (i, j) = (randint(0, rows - 1), randint(0, columns - 1))
-  maze[(i, j)].carved = True
+  cell = maze.random()
+  cell.carved = True
 
-  wall_stack = [(maze[(i, j)], dir) for dir in maze[(i, j)].intact_walls()]
+  wall_stack = [(cell, dir) for dir in cell.intact_walls()]
   while wall_stack:
     i = randint(0, len(wall_stack) - 1)
     (cell, dir) = wall_stack.pop(i) 
@@ -52,10 +52,10 @@ def recursive_backtracker(maze):
   (rows, columns) = maze.size
   total = rows * columns
 
-  (i, j) = (randint(0, rows - 1), randint(0, columns - 1))
-  maze[(i, j)].carved = True
+  cell = maze.random()
+  cell.carved = True
   carved = 1
-  cell_stack = [maze[(i, j)]]
+  cell_stack = [cell]
   while carved < total:
     cell = cell_stack.pop()
     neighborhood = cell.neighbors

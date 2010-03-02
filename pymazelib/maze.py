@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+from random import randint
+
 # directions
 (NORTH, EAST, SOUTH, WEST) = range(4)
 DIRECTIONS = 4
@@ -71,6 +73,14 @@ class Maze(object):
     self.grid[0][0].start = True
     self.grid[rows - 1][columns - 1].end = True
     self.modified = []
+
+  def random(self):
+    """Return a random cell taken from the grid.
+
+    """
+    (rows, columns) = self.size
+    (i, j) = (randint(0, rows - 1), randint(0, columns - 1))
+    return self.grid[i][j]
 
   def neighbors(self, i, j):
     """Return an array containing the neighbors of the given cell and the
