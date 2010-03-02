@@ -1,7 +1,8 @@
 #!/usr/bin/python
 
 # directions
-NORTH, EAST, SOUTH, WEST = range(4) 
+(NORTH, EAST, SOUTH, WEST) = range(4)
+DIRECTIONS = 4
 
 # how to represent a cell depending on its walls.
 CELL = '0123456789abcdef'
@@ -10,7 +11,7 @@ def opposite_direction(dir):
   """Return the opposite of the given direction.
 
   """
-  return (dir + 2) % 4
+  return (dir + DIRECTIONS / 2) % DIRECTIONS
 
 class Cell(object):
   def __init__(self, coords):
@@ -39,21 +40,22 @@ class Cell(object):
     """Return a list of not knocked down walls.
 
     """
-    return [dir for dir in xrange(4) if self.walls[dir]]
+    return [dir for dir in xrange(DIRECTIONS) if self.walls[dir]]
 
   def open_directions(self):
     """Return the open directions of the current cell.
 
     """
-    return [dir for dir in xrange(4) if self.directions[dir]]
+    return [dir for dir in xrange(DIRECTIONS) if self.directions[dir]]
 
   def __str__(self):
     """Return a character representing the state of the cell. The state is
     given by the walls which have not been knocked down.
 
     """
-    i = int(self.north_wall) * 8 + int(self.east_wall) * 4 + \
-        int(self.south_wall) * 2 + int(self.west_wall) * 1
+    i = 0
+    for (n, valid) in revered(self.walls):
+      i += int(valid) * (2 ** n)
     return CELL[i]
 
 class Maze(object):
