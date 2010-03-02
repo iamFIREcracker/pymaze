@@ -102,7 +102,7 @@
           </packing>
         </child>
         <child>
-          <object class="GtkDrawingArea" id="drawingarea1">
+          <object class="GtkDrawingArea" id="darea">
             <property name="visible">True</property>
             <signal name="expose_event" handler="expose_cb"/>
             <signal name="configure_event" handler="configure_cb"/>
@@ -115,6 +115,15 @@
           <object class="GtkHBox" id="hbox2">
             <property name="visible">True</property>
             <child>
+              <object class="GtkButton" id="clear">
+                <property name="label" translatable="yes">Clear</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <signal name="clicked" handler="clear_clicked_cb"/>
+              </object>
+            </child>
+            <child>
               <object class="GtkButton" id="generate">
                 <property name="label" translatable="yes">Generate</property>
                 <property name="visible">True</property>
@@ -122,9 +131,6 @@
                 <property name="receives_default">True</property>
                 <signal name="clicked" handler="generate_clicked_cb"/>
               </object>
-              <packing>
-                <property name="position">0</property>
-              </packing>
             </child>
             <child>
               <object class="GtkButton" id="solve">
@@ -134,9 +140,6 @@
                 <property name="receives_default">True</property>
                 <signal name="clicked" handler="solve_clicked_cb"/>
               </object>
-              <packing>
-                <property name="position">1</property>
-              </packing>
             </child>
             <child>
               <object class="GtkCheckButton" id="show_evolution">
@@ -147,9 +150,6 @@
                 <property name="active">True</property>
                 <property name="draw_indicator">True</property>
               </object>
-              <packing>
-                <property name="position">2</property>
-              </packing>
             </child>
           </object>
           <packing>

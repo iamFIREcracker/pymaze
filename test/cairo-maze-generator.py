@@ -10,12 +10,19 @@ from gtk import gdk
 import cairo
 
 from pymazelib.maze import Maze
+from pymazelib.maze import NORTH
+from pymazelib.maze import EAST
+from pymazelib.maze import SOUTH
+from pymazelib.maze import WEST
 from pymazelib.generators import generators
 from pymazelib.solvers import solvers
 
 GUI_CONF = os.path.join(os.path.dirname(__file__), 'cairo-maze-generator.xml')
 
 def combobox_init(combobox, items):
+  """XXX
+
+  """
   model = gtk.ListStore(str)
   for i in items:
       model.append([i])
@@ -53,15 +60,17 @@ class Gui(object):
     builder.connect_signals(self)
 
     self.window = builder.get_object('window')
+    self.darea = builder.get_object('darea')
     self._rows = builder.get_object('rows')
     self._columns = builder.get_object('columns')
     self._generators = builder.get_object('generators')
     self._solvers = builder.get_object('solvers')
+    self._clear = builder.get_object('clear')
     self._generate = builder.get_object('generate')
     self._solve = builder.get_object('solve')
     self._show_evoltuion = builder.get_object('show_evolution')
     self.widgets = [self._rows, self._columns, self._generators,
-                    self._solvers, self._generate]
+                    self._solvers, self._clear, self._generate, self._solve]
 
     combobox_init(self._generators, generators.keys())
     combobox_init(self._solvers, solvers.keys())
@@ -83,6 +92,7 @@ class Gui(object):
     (self.grid, self.delta) = \
         create_grid_and_delta(width, height, self.rows, self.columns)
     self.draw_maze(self.cr)
+    self.window.queue_draw()
 
   def configure_cb(self, widget, event):
     """Each time the drawing area is reconfigured, we store a grid used to map
@@ -114,12 +124,17 @@ class Gui(object):
     cr.paint()
     return False
 
-  def generate_clicked_cb(self, button):
-    """Start the maze generator process.
+  def clear_clicked_cb(self, button):
+    """Clear the current maze.
 
     """
     self.maze = Maze(self.rows, self.columns)
     self.draw_maze(self.cr)
+
+  def generate_clicked_cb(self, button):
+    """Start the maze generator process.
+
+    """
     process_fun = self.process(generators[self.generator](self.maze))
     gobject.idle_add(process_fun.next)
 
@@ -169,19 +184,23 @@ class Gui(object):
     (x, y) = self.grid[i][j]
     if cell.start: cr.set_source_rgb(1, 0, 0)
     elif cell.end: cr.set_source_rgb(0, 1, 0)
+    elif cell.active: cr.set_source_rgb(1, 0, 0)
+    elif cell.backward: cr.set_source_rgb(0.8, 0.8, 0.8)
     else: cr.set_source_rgb(1, 1, 1)
     cr.rectangle(x, y, delta, delta)
     cr.fill()
 
     cr.set_source_rgb(0, 0, 0)
-    if cell.north_wall:
+    if cell.walls[NORTH]:
       self.draw_line(cr, x, y, x + delta, y)
-    if cell.east_wall:
+    if cell.walls[EAST]:
       self.draw_line(cr, x + delta, y, x + delta, y + delta)
-    if cell.south_wall:
+    if cell.walls[SOUTH]:
       self.draw_line(cr, x + delta, y + delta, x, y + delta)
-    if cell.west_wall:
+    if cell.walls[WEST]:
       self.draw_line(cr, x, y + delta, x, y)
+
+    self.darea.window.invalidate_rect((x, y, delta, delta), True)
 
   def draw_maze(self, cr):
     """Wrapper which invoke the draw_cell on each cell of the maze.
@@ -196,7 +215,6 @@ class Gui(object):
     for i in xrange(rows):
       for j in xrange(columns):
         self.draw_cell(cr, i, j)
-    self.window.queue_draw()
 
   def draw_modified(self, cr):
     """Wrapper which invoke the draw_cell on each modified cell.
@@ -205,7 +223,6 @@ class Gui(object):
     while self.maze.modified:
       (i, j) = self.maze.modified.pop()
       self.draw_cell(cr, i, j)
-    self.window.queue_draw()
 
   def mainloop(self):
     """Wrapper to gtk mainloop.
